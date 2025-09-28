@@ -33,6 +33,7 @@
     box-sizing: border-box;
     border-radius: 15px;
     background-color: #ffffff;
+    color: #000;
 }
 
 .contactcontainer textarea {

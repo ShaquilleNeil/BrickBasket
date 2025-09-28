@@ -3,7 +3,7 @@ import "./Navbar.css";
 import logo from "../assets/hlogo2.png";
 import { firestore } from "../firebase";
 import { addDoc, collection } from "firebase/firestore";
-import { login, signInWithGoogle, logout, signup } from "../auth";
+import { login, signInWithGoogle, logout, signup, sendPasswordResetEmail } from "../auth";
 import { useAuth } from "../contexts/authContext";
 import gmailogo from "../assets/gmail.png";
 
@@ -12,6 +12,11 @@ const Navbar = () => {
   const [openLogin, setOpenLogin] = useState(false);
   const [openSignup, setOpenSignup] = useState(false);
   const [signupErrors, setSignupErrors] = useState({});
+  const [openReset, setOpenReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
+  const [resetError, setResetError] = useState("");
+
 
 
   const nameRef = useRef();
@@ -28,64 +33,83 @@ const Navbar = () => {
   const { currentUser, userLoggedIn } = useAuth();
 
   // Signup handler
-const handleSignup = async (e) => {
-  e.preventDefault();
+  const handleSignup = async (e) => {
+    e.preventDefault();
 
-  const data = {
-    name: nameRef.current.value.trim(),
-    email: emailRef.current.value.trim(),
-    phone: phoneRef.current.value.trim(),
-    street: streetRef.current.value.trim(),
-    city: cityRef.current.value.trim(),
-    state: stateRef.current.value.trim(),
-    zip: zipRef.current.value.trim(),
-    password: passwordRef.current.value,
-  };
+    const data = {
+      name: nameRef.current.value.trim(),
+      email: emailRef.current.value.trim(),
+      phone: phoneRef.current.value.trim(),
+      street: streetRef.current.value.trim(),
+      city: cityRef.current.value.trim(),
+      state: stateRef.current.value.trim(),
+      zip: zipRef.current.value.trim(),
+      password: passwordRef.current.value,
+    };
 
-  const errors = {};
+    const errors = {};
 
-  if (!data.name) errors.name = "Full Name is required";
-  if (!data.email) errors.email = "Email is required";
-  else if (!/\S+@\S+\.\S+/.test(data.email)) errors.email = "Email is invalid";
+    if (!data.name) errors.name = "Full Name is required";
+    if (!data.email) errors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(data.email)) errors.email = "Email is invalid";
 
-  if (!data.phone) errors.phone = "Phone Number is required";
-  else if (!/^\d{10}$/.test(data.phone)) errors.phone = "Phone Number must be 10 digits";
+    if (!data.phone) errors.phone = "Phone Number is required";
+    else if (!/^\d{10}$/.test(data.phone)) errors.phone = "Phone Number must be 10 digits";
 
-  if (!data.street) errors.street = "Street is required";
-  if (!data.city) errors.city = "City is required";
-  if (!data.state) errors.state = "Province is required";
-  if (!data.zip) errors.zip = "Zip Code is required";
+    if (!data.street) errors.street = "Street is required";
+    if (!data.city) errors.city = "City is required";
+    if (!data.state) errors.state = "Province is required";
+    if (!data.zip) errors.zip = "Zip Code is required";
 
     if (!data.password) {
-    errors.password = "Password is required";
-  } else {
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{6,}$/;
-    if (!passwordRegex.test(data.password)) {
-      errors.password =
-        "Password must be at least 6 characters, include 1 uppercase, 1 number, and 1 special character";
+      errors.password = "Password is required";
+    } else {
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{6,}$/;
+      if (!passwordRegex.test(data.password)) {
+        errors.password =
+          "Password must be at least 6 characters, include 1 uppercase, 1 number, and 1 special character";
       }
     }
 
-  setSignupErrors(errors);
+    setSignupErrors(errors);
 
-  if (Object.keys(errors).length > 0) return; // stop if there are errors
+    if (Object.keys(errors).length > 0) return; // stop if there are errors
 
-  try {
-    // await signup(data.email, data.password); // optional
-    await addDoc(usersRef, data);
+    try {
+      // await signup(data.email, data.password); // optional
+      await addDoc(usersRef, data);
 
-    alert("Signup successful");
-    setOpenSignup(false);
-    setOpenLogin(true);
-  } catch (err) {
-    console.error(err);
-    alert("Signup failed: " + err.message);
-  }
-};
+      alert("Signup successful");
+      setOpenSignup(false);
+      setOpenLogin(true);
+    } catch (err) {
+      console.error(err);
+      alert("Signup failed: " + err.message);
+    }
+  };
 
 
 
-  
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    setResetMessage("");
+    setResetError("");
+
+    if (!resetEmail) {
+      setResetError("Email is required");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(resetEmail);
+      setResetMessage("Password reset email sent! Check your inbox.");
+    } catch (err) {
+      setResetError(err.message || "Failed to send reset email.");
+    }
+  };
+
+
   // Login handler
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -192,13 +216,23 @@ const handleSignup = async (e) => {
             <form onSubmit={handleLogin}>
               <input type="email" name="email" placeholder="Email" required />
               <input type="password" name="password" placeholder="Password" required />
-              <a href="/forgotpassword">Forgot Password?</a>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setOpenLogin(false);  // close login popup if open
+                  setOpenReset(true);   // open reset popup
+                }}
+              >
+                Forgot Password?
+              </a>
+
               <button className="button-30" type="submit">
                 LOGIN
               </button>
             </form>
             <button className="button-31" onClick={handleGoogleSignIn}>
-              <img src={gmailogo} alt="Google Logo" style={{ width: "15px",height: "15px", marginRight: "8px" }} /> Sign in with Google
+              <img src={gmailogo} alt="Google Logo" style={{ width: "15px", height: "15px", marginRight: "8px" }} /> Sign in with Google
             </button>
             <a href="#" onClick={switchToSignup} className="switch-link">
               Don't have an account? Sign up
@@ -219,33 +253,33 @@ const handleSignup = async (e) => {
               X
             </button>
             <h1>Sign Up</h1>
-           <form onSubmit={handleSignup}>
-  <input type="text" ref={nameRef} placeholder="Full Name" />
-  {signupErrors.name && <p className="error">{signupErrors.name}</p>}
+            <form onSubmit={handleSignup}>
+              <input type="text" ref={nameRef} placeholder="Full Name" />
+              {signupErrors.name && <p className="error">{signupErrors.name}</p>}
 
-  <input type="email" ref={emailRef} placeholder="Email" />
-  {signupErrors.email && <p className="error">{signupErrors.email}</p>}
+              <input type="email" ref={emailRef} placeholder="Email" />
+              {signupErrors.email && <p className="error">{signupErrors.email}</p>}
 
-  <input type="text" ref={phoneRef} placeholder="Phone Number" />
-  {signupErrors.phone && <p className="error">{signupErrors.phone}</p>}
+              <input type="text" ref={phoneRef} placeholder="Phone Number" />
+              {signupErrors.phone && <p className="error">{signupErrors.phone}</p>}
 
-  <input type="text" ref={streetRef} placeholder="Street Address" />
-  {signupErrors.street && <p className="error">{signupErrors.street}</p>}
+              <input type="text" ref={streetRef} placeholder="Street Address" />
+              {signupErrors.street && <p className="error">{signupErrors.street}</p>}
 
-  <input type="text" ref={cityRef} placeholder="City" />
-  {signupErrors.city && <p className="error">{signupErrors.city}</p>}
+              <input type="text" ref={cityRef} placeholder="City" />
+              {signupErrors.city && <p className="error">{signupErrors.city}</p>}
 
-  <input type="text" ref={stateRef} placeholder="Province" />
-  {signupErrors.state && <p className="error">{signupErrors.state}</p>}
+              <input type="text" ref={stateRef} placeholder="Province" />
+              {signupErrors.state && <p className="error">{signupErrors.state}</p>}
 
-  <input type="text" ref={zipRef} placeholder="Zip Code" />
-  {signupErrors.zip && <p className="error">{signupErrors.zip}</p>}
+              <input type="text" ref={zipRef} placeholder="Zip Code" />
+              {signupErrors.zip && <p className="error">{signupErrors.zip}</p>}
 
-  <input type="password" ref={passwordRef} placeholder="Password" />
-  {signupErrors.password && <p className="error">{signupErrors.password}</p>}
+              <input type="password" ref={passwordRef} placeholder="Password" />
+              {signupErrors.password && <p className="error">{signupErrors.password}</p>}
 
-  <button className="button-30" type="submit">SIGN UP</button>
-</form>
+              <button className="button-30" type="submit">SIGN UP</button>
+            </form>
 
             <a href="#" onClick={switchToLogin} className="switch-link">
               Already have an account? Login
@@ -253,6 +287,49 @@ const handleSignup = async (e) => {
           </div>
         </div>
       )}
+
+      {/* Password Reset Popup */}
+      {openReset && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button
+              className="button-30"
+              style={{ position: "absolute", top: "10px", right: "10px" }}
+              onClick={() => setOpenReset(false)}
+            >
+              X
+            </button>
+            <h1>Reset Password</h1>
+            <form onSubmit={handlePasswordReset}>
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                required
+              />
+              <button className="button-30" type="submit">
+                Send Reset Email
+              </button>
+            </form>
+            {resetMessage && <p className="success">{resetMessage}</p>}
+            {resetError && <p className="error">{resetError}</p>}
+            <button
+              className="button-30"
+              onClick={() => {
+                setOpenReset(false);
+                setOpenLogin(true);
+              }}
+            >
+              Back to Login
+            </button>
+          </div>
+        </div>
+      )}
+
+
+
+
     </>
   );
 };

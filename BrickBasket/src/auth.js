@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  sendPasswordResetEmail as firebaseSendPasswordResetEmail
 } from "firebase/auth";
 
 // Create a new user with email and password
@@ -37,19 +38,25 @@ export function logout() {
   return auth.signOut();
 }
 
-// Password reset
-export function resetPassword(email) {
-  return auth.sendPasswordResetEmail(email);
+
+//password reset email
+export function sendPasswordResetEmail(email) {
+  return firebaseSendPasswordResetEmail(auth,email);
 }
 
-// Password change
 export function updatePassword(password) {
-  if (auth.currentUser) {
-    return auth.currentUser.updatePassword(password);
-  } else {
+  if (!auth.currentUser) {
     return Promise.reject("No user is signed in.");
   }
+
+  return auth.currentUser.updatePassword(password).catch((err) => {
+    if (err.code === "auth/requires-recent-login") {
+      return Promise.reject("Please sign in again to update your password.");
+    }
+    return Promise.reject(err);
+  });
 }
+
 
 // Email verification
 export function sendEmailVerification() {

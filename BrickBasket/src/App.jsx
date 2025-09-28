@@ -3,9 +3,11 @@ import Navbar from './pages/Navbar.jsx';
 import Home from './pages/home.jsx';
 import About from './pages/about.jsx';
 import Contact from './pages/contact.jsx';
+import { AuthProvider } from './contexts/authContext/index.jsx';
 
 function App() {
   return (
+    <AuthProvider>
     <Router>
       <Navbar /> {/* Always visible */}
       <Routes>
@@ -14,6 +16,7 @@ function App() {
         <Route path="/contact" element={<Contact />} />
       </Routes>
     </Router>
+    </AuthProvider>
   );
 }
 

@@ -11,6 +11,8 @@ const Navbar = () => {
   const [isActive, setIsActive] = useState(false);
   const [openLogin, setOpenLogin] = useState(false);
   const [openSignup, setOpenSignup] = useState(false);
+  const [signupErrors, setSignupErrors] = useState({});
+
 
   const nameRef = useRef();
   const emailRef = useRef();
@@ -26,35 +28,64 @@ const Navbar = () => {
   const { currentUser, userLoggedIn } = useAuth();
 
   // Signup handler
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    const data = {
-      name: nameRef.current.value,
-      email: emailRef.current.value,
-      phone: phoneRef.current.value,
-      street: streetRef.current.value,
-      city: cityRef.current.value,
-      state: stateRef.current.value,
-      zip: zipRef.current.value,
-      password: passwordRef.current.value,
-    };
+const handleSignup = async (e) => {
+  e.preventDefault();
 
-    try {
-    //   // Firebase Auth signup
-    //   await signup(data.email, data.password);
-
-      // Save user info to Firestore
-      await addDoc(usersRef, data);
-
-      alert("Signup successful");
-      setOpenSignup(false);
-      setOpenLogin(true);
-    } catch (err) {
-      console.error(err);
-      alert("Signup failed: " + err.message);
-    }
+  const data = {
+    name: nameRef.current.value.trim(),
+    email: emailRef.current.value.trim(),
+    phone: phoneRef.current.value.trim(),
+    street: streetRef.current.value.trim(),
+    city: cityRef.current.value.trim(),
+    state: stateRef.current.value.trim(),
+    zip: zipRef.current.value.trim(),
+    password: passwordRef.current.value,
   };
 
+  const errors = {};
+
+  if (!data.name) errors.name = "Full Name is required";
+  if (!data.email) errors.email = "Email is required";
+  else if (!/\S+@\S+\.\S+/.test(data.email)) errors.email = "Email is invalid";
+
+  if (!data.phone) errors.phone = "Phone Number is required";
+  else if (!/^\d{10}$/.test(data.phone)) errors.phone = "Phone Number must be 10 digits";
+
+  if (!data.street) errors.street = "Street is required";
+  if (!data.city) errors.city = "City is required";
+  if (!data.state) errors.state = "Province is required";
+  if (!data.zip) errors.zip = "Zip Code is required";
+
+    if (!data.password) {
+    errors.password = "Password is required";
+  } else {
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{6,}$/;
+    if (!passwordRegex.test(data.password)) {
+      errors.password =
+        "Password must be at least 6 characters, include 1 uppercase, 1 number, and 1 special character";
+      }
+    }
+
+  setSignupErrors(errors);
+
+  if (Object.keys(errors).length > 0) return; // stop if there are errors
+
+  try {
+    // await signup(data.email, data.password); // optional
+    await addDoc(usersRef, data);
+
+    alert("Signup successful");
+    setOpenSignup(false);
+    setOpenLogin(true);
+  } catch (err) {
+    console.error(err);
+    alert("Signup failed: " + err.message);
+  }
+};
+
+
+
+  
   // Login handler
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -188,19 +219,34 @@ const Navbar = () => {
               X
             </button>
             <h1>Sign Up</h1>
-            <form onSubmit={handleSignup}>
-              <input type="text" ref={nameRef} placeholder="Full Name" required />
-              <input type="email" ref={emailRef} placeholder="Email" required />
-              <input type="text" ref={phoneRef} placeholder="Phone Number" required />
-              <input type="text" ref={streetRef} placeholder="Street Address" required />
-              <input type="text" ref={cityRef} placeholder="City" required />
-              <input type="text" ref={stateRef} placeholder="Province" required />
-              <input type="text" ref={zipRef} placeholder="Zip Code" required />
-              <input type="password" ref={passwordRef} placeholder="Password" required />
-              <button className="button-30" type="submit">
-                SIGN UP
-              </button>
-            </form>
+           <form onSubmit={handleSignup}>
+  <input type="text" ref={nameRef} placeholder="Full Name" />
+  {signupErrors.name && <p className="error">{signupErrors.name}</p>}
+
+  <input type="email" ref={emailRef} placeholder="Email" />
+  {signupErrors.email && <p className="error">{signupErrors.email}</p>}
+
+  <input type="text" ref={phoneRef} placeholder="Phone Number" />
+  {signupErrors.phone && <p className="error">{signupErrors.phone}</p>}
+
+  <input type="text" ref={streetRef} placeholder="Street Address" />
+  {signupErrors.street && <p className="error">{signupErrors.street}</p>}
+
+  <input type="text" ref={cityRef} placeholder="City" />
+  {signupErrors.city && <p className="error">{signupErrors.city}</p>}
+
+  <input type="text" ref={stateRef} placeholder="Province" />
+  {signupErrors.state && <p className="error">{signupErrors.state}</p>}
+
+  <input type="text" ref={zipRef} placeholder="Zip Code" />
+  {signupErrors.zip && <p className="error">{signupErrors.zip}</p>}
+
+  <input type="password" ref={passwordRef} placeholder="Password" />
+  {signupErrors.password && <p className="error">{signupErrors.password}</p>}
+
+  <button className="button-30" type="submit">SIGN UP</button>
+</form>
+
             <a href="#" onClick={switchToLogin} className="switch-link">
               Already have an account? Login
             </a>

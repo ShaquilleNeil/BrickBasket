@@ -246,3 +246,9 @@ form input{
     background-color: #ffffff;
     color: #000;
 }
+
+.error {
+  color: red;
+  font-size: 0.85rem;
+  margin: 0.2rem 0 0.5rem 0;
+}

@@ -3,13 +3,12 @@
     color: #fff;
     padding: 40px;
     max-width: 1200px;
-    margin: 0 auto;
+    margin: 0;
     display: grid;
     grid-template-columns: 1fr 1fr; 
     gap: 40px;
     align-items: start; 
-    position: relative;
-    z-index: 1;
+  
     border-radius: 10px;
     border: 1px solid #fff;
     backdrop-filter: blur(3px);

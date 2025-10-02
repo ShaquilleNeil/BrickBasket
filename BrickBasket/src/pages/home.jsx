@@ -87,7 +87,7 @@ export default function Home() {
         </div>
         <h2>BE IN THE KNOW</h2>
        <p>Get realtime updates on the status of your deliveries via your dashboard</p>
-       {/* <button className="button-signup" > 🚀 Get Started</button> */}
+
 </div>
       <div className="mini-info">
         <div className="left-col">

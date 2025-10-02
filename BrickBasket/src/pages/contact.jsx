@@ -1,8 +1,38 @@
 import "./contact.css"
 import Lottie from "lottie-react"
 import animationData from "../assets/contact.json"
+import emailjs from '@emailjs/browser';
+import React, { useRef, useState } from "react";
 function contact() {
+     const formRef = useRef();
+     const [status, setStatus] = useState('');
+
+      const handleSubmit = (e) => {
+    e.preventDefault();
+    setStatus("Sending...");
+
+    emailjs
+      .sendForm(
+        "service_qw0hj4c",   // replace with your service ID
+        "template_737j2qf",  // replace with your template ID
+        formRef.current,
+        "OA4VGF-OPafeORdSI"  
+      )
+      .then(
+        (result) => {
+          console.log(result.text);
+          setStatus("Message sent successfully!");
+          formRef.current.reset(); // clear form
+        },
+        (error) => {
+          console.log(error.text);
+          setStatus("Failed to send message. Try again later.");
+        }
+      );
+  };
+
     return (
+       
         <>
             <div class="custom-shape-divider-bottom-1758859673">
                 <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
@@ -12,21 +42,21 @@ function contact() {
 
             {/* 2 column set up with a form on the right and text on the left  */}
             <div className="contactcontainer">
-             
-                    <Lottie
-                        animationData={animationData}
-                        loop={true}
-                        autoplay={true}
-                        style={{
-                            width: 300, height: 300, position: 'absolute',
-                            top: -10,
-                            left: 0,
-                            transform: 'translateY(-50%)',
-                            zIndex: 10,
-                            color: "red"
-                        }}
-                    />
-                
+
+                <Lottie
+                    animationData={animationData}
+                    loop={true}
+                    autoplay={true}
+                    style={{
+                        width: 300, height: 300, position: 'absolute',
+                        top: -10,
+                        left: 0,
+                        transform: 'translateY(-50%)',
+                        zIndex: 10,
+                        color: "red"
+                    }}
+                />
+
 
                 <div class="contactText">
                     <h1>contact us</h1>
@@ -38,10 +68,10 @@ function contact() {
                 </div>
 
                 <div className="contactForm">
-                    <form>
-                        <input type="text" placeholder="Name" />
-                        <input type="email" placeholder="Email" />
-                        <textarea placeholder="Message"></textarea>
+                    <form ref={formRef} onSubmit={handleSubmit}>
+                        <input type="text" name="name" placeholder="Name" />
+                        <input type="email" name="email" placeholder="Email" />
+                        <textarea name="message" placeholder="Message"></textarea>
                         <button type="submit">Send</button>
                     </form>
                 </div>

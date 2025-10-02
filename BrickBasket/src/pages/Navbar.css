@@ -160,6 +160,32 @@ nav {
   transform: translate(0.05em, 0.05em);
   box-shadow: 0.05em 0.05em;
 }
+.button-31 {
+  background: #ffffff;
+  font-family: inherit;
+  font-weight: 900;
+  margin-bottom: 5px;
+  margin-top: 5px;
+  color: #000;
+  font-size: 15px;
+  border: 3px solid rgba(0, 0, 0, 0);
+  border-radius: 0.4em;
+  box-shadow: 0.1em 0.1em;
+  cursor: pointer;
+  height: 40px;
+  padding: 10px 10px;
+}
+
+.button-31:hover {
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: 0.15em 0.15em #ffffff;
+  border-color: #ffffff;
+}
+
+.button-31:active {
+  transform: translate(0.05em, 0.05em);
+  box-shadow: 0.05em 0.05em;
+} 
 
 .popup-overlay {
     position: fixed;
@@ -219,4 +245,10 @@ form input{
     border-radius: 15px;
     background-color: #ffffff;
     color: #000;
+}
+
+.error {
+  color: red;
+  font-size: 0.85rem;
+  margin: 0.2rem 0 0.5rem 0;
 }

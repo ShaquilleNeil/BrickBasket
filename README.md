@@ -5,7 +5,9 @@
 ![Firebase](https://img.shields.io/badge/Firebase-12.3.0-FFCA28?logo=firebase&logoColor=black)
 ![Stripe](https://img.shields.io/badge/Stripe-Enabled-635BFF?logo=stripe&logoColor=white)
 ![Google Maps](https://img.shields.io/badge/Google%20Maps-API-4285F4?logo=googlemaps&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+![Copyright](https://img.shields.io/badge/Copyright-2025-Shaquille_O_Neil-All%20Rights%20Reserved-red)
+
+
 
 BrickBasket is a simple **construction materials delivery website** that allows clients to **request, schedule, monitor, and pay for deliveries** of construction materials and services.  
 
@@ -116,6 +118,11 @@ npm run preview
 
 
 ---
+
+## 📄 Copyright
+
+© 2025 Shaquille O Neil. All rights reserved.
+
 
 
 

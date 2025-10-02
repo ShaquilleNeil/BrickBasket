@@ -5,7 +5,8 @@
 ![Firebase](https://img.shields.io/badge/Firebase-12.3.0-FFCA28?logo=firebase&logoColor=black)
 ![Stripe](https://img.shields.io/badge/Stripe-Enabled-635BFF?logo=stripe&logoColor=white)
 ![Google Maps](https://img.shields.io/badge/Google%20Maps-API-4285F4?logo=googlemaps&logoColor=white)
-![Copyright](https://img.shields.io/badge/Copyright-2025-Shaquille_O_Neil-All%20Rights%20Reserved-red)
+![Copyright](https://img.shields.io/static/v1?label=Copyright&message=2025%20Shaquille%20O%20Neil%20All%20Rights%20Reserved&color=red&cachebust=1)
+
 
 
 

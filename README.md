@@ -99,7 +99,7 @@ npm run preview
 
 ## 📸 Screenshots
 Homepage 
-
+![Homepage] (https://github.com/ShaquilleNeil/BrickBasket/tree/Iteration1/BrickBasket/src/assets/Homepage.png)
 
 ---
 

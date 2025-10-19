@@ -60,6 +60,8 @@ export default function DeliveryMapPanel() {
           borderRadius: "8px",
         }}
       >
+   
+         <button>Request Delivery</button>
         <h3 style={{ color: "white", marginBottom: "10px" }}>
           In Progress Deliveries
         </h3>
@@ -93,6 +95,8 @@ export default function DeliveryMapPanel() {
             </div>
           );
         })}
+
+        
       </div>
 
       {/* Right panel: map */}

@@ -155,10 +155,12 @@ const Navbar = () => {
   return (
     <>
       <nav>
+        <a href="/">
         <div className="logo">
           <img src={logo} alt="logo" />
           <h1>Brick Basket</h1>
         </div>
+        </a>
 
         <div className={`off-screen-menu ${isActive ? "active" : ""}`}>
           <ul>

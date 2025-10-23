@@ -40,13 +40,13 @@ export default function Dashuser() {
                 } else {
                     // If no document exists, use defaults or create one
                     const defaultData = {
-                        name: user.displayName || "",
+                        name: user.name || "",
                         email: user.email || "",
-                        phone: "",
-                        street: "",
-                        city: "",
-                        state: "",
-                        zip: "",
+                        phone: user.phone || "",
+                        street: user.street || "",
+                        city: user.city || "",
+                        state: user.state || "",
+                        zip: user.zip || "",
                         password: "",
                     };
                     setFormData(defaultData);
@@ -67,40 +67,56 @@ export default function Dashuser() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!currentUser) return;
-
+      
         try {
-            // Update display name in Firebase Auth
-            if (formData.name !== currentUser.displayName) {
-                await updateProfile(currentUser, { displayName: formData.name });
-            }
-
-            // Update email in Firebase Auth
-            if (formData.email !== currentUser.email) {
-                await updateEmail(currentUser, formData.email);
-            }
-
-            // Update password if field is not empty
-            if (formData.password) {
-                await updatePassword(currentUser, formData.password);
-            }
-
-            // Update other fields in Firestore
-            const userRef = doc(firestore, "users", currentUser.uid);
-            await updateDoc(userRef, {
-                phone: formData.phone,
-                street: formData.street,
-                city: formData.city,
-                state: formData.state,
-                zip: formData.zip,
+          // Update display name in Auth
+          if (formData.name && formData.name !== currentUser.displayName) {
+            await updateProfile(currentUser, { displayName: formData.name });
+          }
+      
+          // Update email in Auth
+          if (formData.email && formData.email !== currentUser.email) {
+            await updateEmail(currentUser, formData.email);
+          }
+      
+          // Update password if field is filled
+          if (formData.password) {
+            await updatePassword(currentUser, formData.password);
+          }
+      
+          // Firestore doc
+          const userRef = doc(firestore, "users", currentUser.uid);
+          const userSnap = await getDoc(userRef);
+      
+          if (!userSnap.exists()) {
+            await setDoc(userRef, {
+              name: formData.name || currentUser.displayName || "",
+              email: formData.email || currentUser.email || "",
+              phone: formData.phone || "",
+              street: formData.street || "",
+              city: formData.city || "",
+              state: formData.state || "",
+              zip: formData.zip || "",
             });
-
-            alert("Profile updated successfully!");
-            setFormData((prev) => ({ ...prev, password: "" })); // clear password field
+          } else {
+            await updateDoc(userRef, {
+              name: formData.name,
+              phone: formData.phone,
+              street: formData.street,
+              city: formData.city,
+              state: formData.state,
+              zip: formData.zip,
+            });
+          }
+      
+          alert("Profile updated successfully!");
+          setFormData(prev => ({ ...prev, password: "" }));
         } catch (err) {
-            console.error(err);
-            alert("Error updating profile: " + err.message);
+          console.error(err);
+          alert("Error updating profile: " + err.message);
         }
-    };
+      };
+      
 
 
     return (

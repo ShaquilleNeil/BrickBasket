@@ -36,7 +36,7 @@ export const Account = () => {
                                 <input type="password" name="password" value={formData.password} onChange={handleChange} />
                             </label>
                             <div className="button-wrapper">
-                                <button className="button-30" type="submit">Save Changes</button>
+                                <button className="button-30" type="submit">Saveasdages</button>
                             </div>
                         </form>
         </div>

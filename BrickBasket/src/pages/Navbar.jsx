@@ -1,11 +1,13 @@
 import React, { useRef, useState } from "react";
 import "./Navbar.css";
 import logo from "../assets/hlogo2.png";
-import { firestore } from "../firebase";
-import { addDoc,doc,setDoc, collection } from "firebase/firestore";
+import { auth,firestore } from "../firebase";
+import { addDoc,doc,setDoc,getDoc, collection } from "firebase/firestore";
 import { login, signInWithGoogle, logout, signup, sendPasswordResetEmail } from "../auth";
 import { useAuth } from "../contexts/authContext";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import gmailogo from "../assets/gmail.png";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const [isActive, setIsActive] = useState(false);
@@ -27,6 +29,7 @@ const Navbar = () => {
   const stateRef = useRef();
   const zipRef = useRef();
   const passwordRef = useRef();
+  const navigate = useNavigate();
 
   const usersRef = collection(firestore, "users"); // firestore collection
 
@@ -77,6 +80,8 @@ const Navbar = () => {
     try {
       // Create user in Firebase Auth
       const userCredential = await signup(data.email, data.password);
+
+      const role = data.email.endsWith("@brickbasket.ca") ? "delivery_manager" : "regular";
   
       // Save Firestore document with UID as ID
       const userRef = doc(firestore, "users", userCredential.user.uid);
@@ -88,6 +93,7 @@ const Navbar = () => {
         city: data.city,
         state: data.state,
         zip: data.zip,
+        role: role
       });
 
       await logout();
@@ -129,9 +135,31 @@ const Navbar = () => {
     const email = e.target.email.value;
     const password = e.target.password.value;
 
+  
+
+    
     try {
-      await login(email, password);
-      setOpenLogin(false);
+      // Sign in the user
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+  
+      // Fetch the user document from Firestore
+      const userDoc = await getDoc(doc(firestore, "users", uid));
+      if (!userDoc.exists()) {
+        alert("User record not found");
+        return;
+      }
+  
+      const { role } = userDoc.data(); // read the role field
+  
+      // Redirect based on role
+      if (role.trim() === "delivery_manager") { // trim because you had a space in signup
+        navigate("/DashDM");
+      } else {
+        navigate("/Dashuser");
+      }
+  
+      setOpenLogin(false); // close login popup
     } catch (err) {
       console.error(err);
       alert("Login failed: " + err.message);

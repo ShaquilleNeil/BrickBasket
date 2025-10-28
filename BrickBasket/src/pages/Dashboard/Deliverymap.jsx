@@ -7,7 +7,10 @@ import {
   DirectionsRenderer,
 } from "@react-google-maps/api";
 import { firestore } from "../../firebase";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, addDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+
 
 const mapStyle = {
   width: "1100px",
@@ -20,8 +23,25 @@ export default function DeliveryMapPanel() {
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [openDelivery, setOpenDelivery] = useState(false);
   const closeDelivery = () => setOpenDelivery(false);
-  const [pendingDeliveries, setPendingDeliveries] = useState([]);
   const [items, setItems] = useState([{ name: "", store: "" }]);
+
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  const fetchUserName = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return "Unknown";
+  
+    const userDocRef = doc(firestore, "users", currentUser.uid);
+    const userDocSnap = await getDoc(userDocRef);
+  
+    if (userDocSnap.exists()) {
+      const data = userDocSnap.data();
+      return data.name || "Unknown";
+    } else {
+      return "Unknown";
+    }
+  };
 
   const stores = [
     "Home Depot Laval",
@@ -41,6 +61,7 @@ export default function DeliveryMapPanel() {
           lng: delivery.location.longitude,
           status: delivery.status || "In Progress",
           driver: delivery.driverName || "Unassigned",
+          items: delivery.items || [],
         };
       });
       setDeliveries(data);
@@ -59,16 +80,33 @@ export default function DeliveryMapPanel() {
     setItems(updatedItems);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newDelivery = {
-      id: Date.now(),
-      items: [...items],
-      status: "Pending",
-    };
-    setPendingDeliveries((prev) => [...prev, newDelivery]);
-    setItems([{ name: "", store: "" }]);
-    closeDelivery();
+
+    try {
+      const clientName = await fetchUserName();
+
+      const newDelivery = {
+        name: `Request #${Date.now()}`,
+        clientName: clientName,
+        items: [...items],
+        status: "Pending", // ✅ set status
+        driverName: "Unassigned",
+        location: {
+          latitude: 45.5017,
+          longitude: -73.5673,
+        },
+        createdAt: new Date(),
+      };
+
+      await addDoc(collection(firestore, "deliveries"), newDelivery);
+
+      setItems([{ name: "", store: "" }]);
+      closeDelivery();
+      console.log("Delivery request submitted successfully!");
+    } catch (error) {
+      console.error("Error adding delivery: ", error);
+    }
   };
 
   const origin = { lat: 45.5017, lng: -73.5673 };
@@ -94,75 +132,105 @@ export default function DeliveryMapPanel() {
       >
         <button onClick={() => setOpenDelivery(true)}>Request Delivery</button>
 
-        <h3 style={{ color: "white", marginBottom: "10px" }}>
-          In Progress Deliveries
-        </h3>
+        {/* Pending Deliveries */}
+        {deliveries.some(d => d.status === "Pending") && (
+          <div style={{ marginTop: "20px" }}>
+            <h3 style={{ color: "white", marginBottom: "10px" }}>Pending Deliveries</h3>
+            {deliveries
+              .filter(d => d.status === "Pending")
+              .map((delivery) => (
+                <div
+                  key={delivery.id}
+                  style={{
+                    backgroundColor: "#2c2c2c",
+                    color: "white",
+                    padding: "10px",
+                    borderRadius: "6px",
+                    marginBottom: "10px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setSelectedDelivery(delivery)}
+                >
+                  <h4>{delivery.name}</h4>
+                  {delivery.items.map((item, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        marginBottom: "5px",
+                        paddingLeft: "10px",
+                        borderLeft: "2px solid #555",
+                      }}
+                    >
+                      <p>Item: {item.name}</p>
+                      <p>Store: {item.store}</p>
+                    </div>
+                  ))}
+                  <p>Status: {delivery.status}</p>
+                </div>
+              ))}
+          </div>
+        )}
 
-        {deliveries.map((d) => {
-          const directions = directionsMap[d.id];
-          const distance =
-            directions?.routes?.[0]?.legs?.[0]?.distance?.text || "-";
-          const duration =
-            directions?.routes?.[0]?.legs?.[0]?.duration?.text || "-";
+        {/* In Progress Deliveries */}
+        {deliveries.some(d => d.status === "In Progress") && (
+          <div style={{ marginTop: "20px" }}>
+            <h3 style={{ color: "white", marginBottom: "10px" }}>In Progress Deliveries</h3>
+            {deliveries
+              .filter(d => d.status === "In Progress")
+              .map((d) => {
+                const directions = directionsMap[d.id];
+                const distance = directions?.routes?.[0]?.legs?.[0]?.distance?.text || "-";
+                const duration = directions?.routes?.[0]?.legs?.[0]?.duration?.text || "-";
 
-          return (
-            <div
-              key={d.id}
-              style={{
-                backgroundColor: "#2c2c2c",
-                color: "white",
-                padding: "10px",
-                marginBottom: "10px",
-                borderRadius: "6px",
-                cursor: "pointer",
-                border:
-                  selectedDelivery?.id === d.id ? "2px solid #00f" : "none",
-              }}
-              onClick={() => setSelectedDelivery(d)}
-            >
-              <h4>{d.name}</h4>
-              <p>Status: {d.status}</p>
-              <p>Driver: {d.driver}</p>
-              <p>Distance: {distance}</p>
-              <p>ETA: {duration}</p>
-            </div>
-          );
-        })}
-
-        {/* ✅ Pending Deliveries Section */}
-        {pendingDeliveries.length > 0 && (
-          <div style={{ marginTop: "30px" }}>
-            <h3 style={{ color: "white", marginBottom: "10px" }}>
-              Pending Deliveries
-            </h3>
-            {pendingDeliveries.map((delivery) => (
-              <div
-                key={delivery.id}
-                style={{
-                  backgroundColor: "#2c2c2c",
-                  color: "white",
-                  padding: "10px",
-                  borderRadius: "6px",
-                  marginBottom: "10px",
-                }}
-              >
-                <h4>Request #{delivery.id}</h4>
-                {delivery.items.map((item, idx) => (
+                return (
                   <div
-                    key={idx}
+                    key={d.id}
                     style={{
-                      marginBottom: "5px",
-                      paddingLeft: "10px",
-                      borderLeft: "2px solid #555",
+                      backgroundColor: "#2c2c2c",
+                      color: "white",
+                      padding: "10px",
+                      marginBottom: "10px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      border: selectedDelivery?.id === d.id ? "2px solid #00f" : "none",
                     }}
+                    onClick={() => setSelectedDelivery(d)}
                   >
-                    <p>Item: {item.name}</p>
-                    <p>Store: {item.store}</p>
+                    <h4>{d.name}</h4>
+                    <p>Items: {d.items.map(item => item.name).join(", ")}</p>
+              <p>Store: {d.items.map(item => item.store).join(", ")}</p>
+                    <p>Status: {d.status}</p>
+                    <p>Driver: {d.driver}</p>
+                    <p>Distance: {distance}</p>
+                    <p>ETA: {duration}</p>
                   </div>
-                ))}
-                <p>Status: {delivery.status}</p>
-              </div>
-            ))}
+                );
+              })}
+          </div>
+        )}
+
+        {/* Completed Deliveries */}
+        {deliveries.some(d => d.status === "Complete") && (
+          <div style={{ marginTop: "20px" }}>
+            <h3 style={{ color: "white", marginBottom: "10px" }}>Completed Deliveries</h3>
+            {deliveries
+              .filter(d => d.status === "Complete")
+              .map((d) => (
+                <div
+                  key={d.id}
+                  style={{
+                    backgroundColor: "#2c2c2c",
+                    color: "white",
+                    padding: "10px",
+                    borderRadius: "6px",
+                    marginBottom: "10px",
+                  }}
+                  onClick={() => setSelectedDelivery(d)}
+                >
+                  <h4>{d.name}</h4>
+                  <p>Driver: {d.driver}</p>
+                </div>
+              ))}
           </div>
         )}
       </div>
@@ -211,9 +279,7 @@ export default function DeliveryMapPanel() {
                   type="text"
                   placeholder="Item Name"
                   value={item.name}
-                  onChange={(e) =>
-                    handleItemChange(index, "name", e.target.value)
-                  }
+                  onChange={(e) => handleItemChange(index, "name", e.target.value)}
                   style={{
                     padding: "8px",
                     borderRadius: "6px",
@@ -226,9 +292,7 @@ export default function DeliveryMapPanel() {
 
                 <select
                   value={item.store}
-                  onChange={(e) =>
-                    handleItemChange(index, "store", e.target.value)
-                  }
+                  onChange={(e) => handleItemChange(index, "store", e.target.value)}
                   style={{
                     padding: "8px",
                     borderRadius: "6px",
@@ -323,10 +387,7 @@ export default function DeliveryMapPanel() {
               key={selectedDelivery.id}
               options={{
                 origin,
-                destination: {
-                  lat: selectedDelivery.lat,
-                  lng: selectedDelivery.lng,
-                },
+                destination: { lat: selectedDelivery.lat, lng: selectedDelivery.lng },
                 travelMode: "DRIVING",
               }}
               callback={handleDirectionsCallback(selectedDelivery.id)}
@@ -334,9 +395,7 @@ export default function DeliveryMapPanel() {
           )}
 
           {selectedDelivery && directionsMap[selectedDelivery.id] && (
-            <DirectionsRenderer
-              directions={directionsMap[selectedDelivery.id]}
-            />
+            <DirectionsRenderer directions={directionsMap[selectedDelivery.id]} />
           )}
         </GoogleMap>
       </LoadScript>

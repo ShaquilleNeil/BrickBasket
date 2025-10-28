@@ -1,5 +1,121 @@
+import DeliveriesTabs from "./DeliveryTabs";
+import { useEffect, useState } from "react";
+import { auth, firestore } from "../../firebase";
+import { onAuthStateChanged, updateProfile, updateEmail } from "firebase/auth";
+import { doc, updateDoc, setDoc, getDoc, collection } from "firebase/firestore";
+import { updatePassword} from "firebase/auth";
 
-const DashDM = () => {
+
+
+export default function DashDM (){
+       const [currentUser, setCurrentUser] = useState(null);
+        const [activeSection, setActiveSection] = useState("ACCOUNT");
+    
+        const usersRef = collection(firestore, "users"); // firestore collection
+    
+        const [formData, setFormData] = useState({
+            name: "",
+            email: "",
+            phone: "",
+            street: "",
+            city: "",
+            state: "",
+            zip: "",
+            password: "",
+        });
+    
+        // Fetch logged-in user
+        useEffect(() => {
+            const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    setCurrentUser(user);
+    
+                    const userRef = doc(firestore, "users", user.uid);
+                    const userSnap = await getDoc(userRef);
+    
+                    if (userSnap.exists()) {
+                        // Fill form with Firestore data
+                        setFormData({ ...userSnap.data(), password: "" });
+                    } else {
+                        // If no document exists, use defaults or create one
+                        const defaultData = {
+                            name: user.name || "",
+                            email: user.email || "",
+                            phone: user.phone || "",
+                            street: user.street || "",
+                            city: user.city || "",
+                            state: user.state || "",
+                            zip: user.zip || "",
+                            password: "",
+                        };
+                        setFormData(defaultData);
+                    }
+                } else {
+                    setCurrentUser(null);
+                }
+            });
+    
+            return () => unsubscribe();
+        }, []);
+    
+        const handleChange = (e) => {
+            const { name, value } = e.target;
+            setFormData(prev => ({ ...prev, [name]: value }));
+        };
+    
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+          
+            try {
+              // Update display name in Auth
+              if (formData.name && formData.name !== currentUser.displayName) {
+                await updateProfile(currentUser, { displayName: formData.name });
+              }
+          
+              // Update email in Auth
+              if (formData.email && formData.email !== currentUser.email) {
+                await updateEmail(currentUser, formData.email);
+              }
+          
+              // Update password if field is filled
+              if (formData.password) {
+                await updatePassword(currentUser, formData.password);
+              }
+          
+              // Firestore doc
+              const userRef = doc(firestore, "users", currentUser.uid);
+              const userSnap = await getDoc(userRef);
+          
+              if (!userSnap.exists()) {
+                await setDoc(userRef, {
+                  name: formData.name || currentUser.displayName || "",
+                  email: formData.email || currentUser.email || "",
+                  phone: formData.phone || "",
+                  street: formData.street || "",
+                  city: formData.city || "",
+                  state: formData.state || "",
+                  zip: formData.zip || "",
+                });
+              } else {
+                await updateDoc(userRef, {
+                  name: formData.name,
+                  phone: formData.phone,
+                  street: formData.street,
+                  city: formData.city,
+                  state: formData.state,
+                  zip: formData.zip,
+                });
+              }
+          
+              alert("Profile updated successfully!");
+              setFormData(prev => ({ ...prev, password: "" }));
+            } catch (err) {
+              console.error(err);
+              alert("Error updating profile: " + err.message);
+            }
+          };
+          
   return (
    <div className="dashuser-wrapper">
                <div className="dashuser-container">
@@ -22,7 +138,7 @@ const DashDM = () => {
                    </div>
    
                    <div className="content">
-                       {/* {activeSection === "ACCOUNT" && (
+                       {activeSection === "ACCOUNT" && (
                            <form className="account-form" onSubmit={handleSubmit}>
                                <label>
                                    Name:
@@ -62,14 +178,14 @@ const DashDM = () => {
                            </form>
                        )}
    
-                       {activeSection === "DELIVERIES" && <DeliveryMap />}
+                       {activeSection === "DELIVERIES" && <DeliveriesTabs />}
                        {activeSection === "HISTORY" && <p>History content goes here.</p>}
                        {activeSection === "INVOICES" && <p>Invoices content goes here.</p>}
-                       {activeSection === "WALLET" && <PaymentOptions />} */}
+                       {activeSection === "WALLET" && <p>Wallet content goes here.</p>}
                    </div>
                </div>
            </div>
   );
 };
 
-export default DashDM;
+

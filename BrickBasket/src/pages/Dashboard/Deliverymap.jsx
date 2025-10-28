@@ -198,7 +198,7 @@ export default function DeliveryMapPanel() {
                   >
                     <h4>{d.name}</h4>
                     <p>Items: {d.items.map(item => item.name).join(", ")}</p>
-              <p>Store: {d.items.map(item => item.store).join(", ")}</p>
+                    <p>Store: {d.items.map(item => item.store).join(", ")}</p>
                     <p>Status: {d.status}</p>
                     <p>Driver: {d.driver}</p>
                     <p>Distance: {distance}</p>

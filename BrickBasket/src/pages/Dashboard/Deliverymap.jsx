@@ -51,24 +51,46 @@ export default function DeliveryMapPanel() {
 
   useEffect(() => {
     const deliveriesRef = collection(firestore, "deliveries");
-    const unsubscribe = onSnapshot(deliveriesRef, (snapshot) => {
-      const data = snapshot.docs.map((doc) => {
-        const delivery = doc.data();
-        return {
-          id: doc.id,
-          name: delivery.name,
-          lat: delivery.location.latitude,
-          lng: delivery.location.longitude,
-          status: delivery.status || "In Progress",
-          driver: delivery.driverName || "Unassigned",
-          items: delivery.items || [],
-        };
-      });
+  
+    const unsubscribe = onSnapshot(deliveriesRef, async (snapshot) => {
+      const data = await Promise.all(
+        snapshot.docs.map(async (docSnap) => {
+          const delivery = docSnap.data();
+  
+          // Default driver name
+          let driverName = "Unassigned";
+  
+          // If driver ID exists, fetch the worker's name
+          if (delivery.driverName) {
+            const workerRef = doc(firestore, "workers", delivery.driverName); // make sure this is the right collection
+            const workerSnap = await getDoc(workerRef);
+  
+            if (workerSnap.exists()) {
+              driverName = workerSnap.data().name || "Unassigned";
+            }
+          }
+  
+          return {
+            id: docSnap.id,
+            name: delivery.name,
+            clientName: delivery.clientName,
+            status: delivery.status || "Pending",
+            driverName, // ← now this will be "James" instead of "worker001"
+            teamId: delivery.teamId || "",
+            teamName: delivery.teamName || "Unassigned",
+            items: delivery.items || [],
+            lat: delivery.location?.latitude,
+            lng: delivery.location?.longitude,
+          };
+        })
+      );
+  
       setDeliveries(data);
     });
-
+  
     return () => unsubscribe();
   }, []);
+  
 
   const addItem = () => {
     setItems((prev) => [...prev, { name: "", store: "" }]);
@@ -91,6 +113,8 @@ export default function DeliveryMapPanel() {
         clientName: clientName,
         items: [...items],
         status: "Pending", // ✅ set status
+        teamId: "",
+        teamName: "Unassigned",
         driverName: "Unassigned",
         location: {
           latitude: 45.5017,
@@ -172,42 +196,39 @@ export default function DeliveryMapPanel() {
         )}
 
         {/* In Progress Deliveries */}
-        {deliveries.some(d => d.status === "In Progress") && (
-          <div style={{ marginTop: "20px" }}>
-            <h3 style={{ color: "white", marginBottom: "10px" }}>In Progress Deliveries</h3>
-            {deliveries
-              .filter(d => d.status === "In Progress")
-              .map((d) => {
-                const directions = directionsMap[d.id];
-                const distance = directions?.routes?.[0]?.legs?.[0]?.distance?.text || "-";
-                const duration = directions?.routes?.[0]?.legs?.[0]?.duration?.text || "-";
+        {/* In Progress Deliveries */}
+{deliveries
+  .filter(d => d.status === "In Progress")
+  .map((d) => {
+    const directions = directionsMap[d.id];
+    const distance = directions?.routes?.[0]?.legs?.[0]?.distance?.text || "-";
+    const duration = directions?.routes?.[0]?.legs?.[0]?.duration?.text || "-";
 
-                return (
-                  <div
-                    key={d.id}
-                    style={{
-                      backgroundColor: "#2c2c2c",
-                      color: "white",
-                      padding: "10px",
-                      marginBottom: "10px",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      border: selectedDelivery?.id === d.id ? "2px solid #00f" : "none",
-                    }}
-                    onClick={() => setSelectedDelivery(d)}
-                  >
-                    <h4>{d.name}</h4>
-                    <p>Items: {d.items.map(item => item.name).join(", ")}</p>
-                    <p>Store: {d.items.map(item => item.store).join(", ")}</p>
-                    <p>Status: {d.status}</p>
-                    <p>Driver: {d.driver}</p>
-                    <p>Distance: {distance}</p>
-                    <p>ETA: {duration}</p>
-                  </div>
-                );
-              })}
-          </div>
-        )}
+    return (
+      <div
+        key={d.id}
+        style={{
+          backgroundColor: "#2c2c2c",
+          color: "white",
+          padding: "10px",
+          marginBottom: "10px",
+          borderRadius: "6px",
+          cursor: "pointer",
+          border: selectedDelivery?.id === d.id ? "2px solid #00f" : "none",
+        }}
+        onClick={() => setSelectedDelivery(d)}
+      >
+        <h4>{d.name}</h4>
+        <p>Items: {d.items.map(item => item.name).join(", ")}</p>
+        <p>Store: {d.items.map(item => item.store).join(", ")}</p>
+        <p>Status: {d.status}</p>
+        <p>Driver: {d.driverName}</p> {/* <-- FIXED */}
+        <p>Distance: {distance}</p>
+        <p>ETA: {duration}</p>
+      </div>
+    );
+  })}
+
 
         {/* Completed Deliveries */}
         {deliveries.some(d => d.status === "Complete") && (
@@ -228,7 +249,7 @@ export default function DeliveryMapPanel() {
                   onClick={() => setSelectedDelivery(d)}
                 >
                   <h4>{d.name}</h4>
-                  <p>Driver: {d.driver}</p>
+                  <p>Driver: {d.driverName}</p>
                 </div>
               ))}
           </div>

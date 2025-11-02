@@ -1,4 +1,5 @@
 import DeliveriesTabs from "./DeliveryTabs";
+import TEAMS from "./TEAMS";
 import { useEffect, useState } from "react";
 import { auth, firestore } from "../../firebase";
 import { onAuthStateChanged, updateProfile, updateEmail } from "firebase/auth";
@@ -129,7 +130,7 @@ export default function DashDM (){
                            <div className="navcontainer">
                                <div className="nav-items" onClick={() => setActiveSection("ACCOUNT")}>ACCOUNT</div>
                                <div className="nav-items" onClick={() => setActiveSection("DELIVERIES")}>DELIVERIES</div>
-                               <div className="nav-items" onClick={() => setActiveSection("HISTORY")}>HISTORY</div>
+                               <div className="nav-items" onClick={() => setActiveSection("TEAMS")}>TEAMS</div>
                                <div className="nav-items" onClick={() => setActiveSection("INVOICES")}>INVOICES</div>
                                <div className="nav-items" onClick={() => setActiveSection("WALLET")}>WALLET</div>
    
@@ -179,7 +180,7 @@ export default function DashDM (){
                        )}
    
                        {activeSection === "DELIVERIES" && <DeliveriesTabs />}
-                       {activeSection === "HISTORY" && <p>History content goes here.</p>}
+                       {activeSection === "TEAMS" && <TEAMS/>}
                        {activeSection === "INVOICES" && <p>Invoices content goes here.</p>}
                        {activeSection === "WALLET" && <p>Wallet content goes here.</p>}
                    </div>

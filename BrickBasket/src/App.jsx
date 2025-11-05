@@ -4,6 +4,7 @@ import Home from "./pages/home.jsx";
 import About from "./pages/about.jsx";
 import Contact from "./pages/contact.jsx";
 import Dashuser from "./pages/Dashboard/Dashuser.jsx";
+import DashDM from "./pages/Dashboard/DashDM.jsx";
 import { AuthProvider, useAuth } from "./contexts/authContext/index.jsx";
 
 
@@ -36,6 +37,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Dashuser />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/DashDM"
+            element={
+              <PrivateRoute>
+                <DashDM />
               </PrivateRoute>
             }
           />

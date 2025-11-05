@@ -1,0 +1,192 @@
+import DeliveriesTabs from "./DeliveryTabs";
+import TEAMS from "./TEAMS";
+import { useEffect, useState } from "react";
+import { auth, firestore } from "../../firebase";
+import { onAuthStateChanged, updateProfile, updateEmail } from "firebase/auth";
+import { doc, updateDoc, setDoc, getDoc, collection } from "firebase/firestore";
+import { updatePassword} from "firebase/auth";
+
+
+
+export default function DashDM (){
+       const [currentUser, setCurrentUser] = useState(null);
+        const [activeSection, setActiveSection] = useState("ACCOUNT");
+    
+        const usersRef = collection(firestore, "users"); // firestore collection
+    
+        const [formData, setFormData] = useState({
+            name: "",
+            email: "",
+            phone: "",
+            street: "",
+            city: "",
+            state: "",
+            zip: "",
+            password: "",
+        });
+    
+        // Fetch logged-in user
+        useEffect(() => {
+            const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    setCurrentUser(user);
+    
+                    const userRef = doc(firestore, "users", user.uid);
+                    const userSnap = await getDoc(userRef);
+    
+                    if (userSnap.exists()) {
+                        // Fill form with Firestore data
+                        setFormData({ ...userSnap.data(), password: "" });
+                    } else {
+                        // If no document exists, use defaults or create one
+                        const defaultData = {
+                            name: user.name || "",
+                            email: user.email || "",
+                            phone: user.phone || "",
+                            street: user.street || "",
+                            city: user.city || "",
+                            state: user.state || "",
+                            zip: user.zip || "",
+                            password: "",
+                        };
+                        setFormData(defaultData);
+                    }
+                } else {
+                    setCurrentUser(null);
+                }
+            });
+    
+            return () => unsubscribe();
+        }, []);
+    
+        const handleChange = (e) => {
+            const { name, value } = e.target;
+            setFormData(prev => ({ ...prev, [name]: value }));
+        };
+    
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+          
+            try {
+              // Update display name in Auth
+              if (formData.name && formData.name !== currentUser.displayName) {
+                await updateProfile(currentUser, { displayName: formData.name });
+              }
+          
+              // Update email in Auth
+              if (formData.email && formData.email !== currentUser.email) {
+                await updateEmail(currentUser, formData.email);
+              }
+          
+              // Update password if field is filled
+              if (formData.password) {
+                await updatePassword(currentUser, formData.password);
+              }
+          
+              // Firestore doc
+              const userRef = doc(firestore, "users", currentUser.uid);
+              const userSnap = await getDoc(userRef);
+          
+              if (!userSnap.exists()) {
+                await setDoc(userRef, {
+                  name: formData.name || currentUser.displayName || "",
+                  email: formData.email || currentUser.email || "",
+                  phone: formData.phone || "",
+                  street: formData.street || "",
+                  city: formData.city || "",
+                  state: formData.state || "",
+                  zip: formData.zip || "",
+                });
+              } else {
+                await updateDoc(userRef, {
+                  name: formData.name,
+                  phone: formData.phone,
+                  street: formData.street,
+                  city: formData.city,
+                  state: formData.state,
+                  zip: formData.zip,
+                });
+              }
+          
+              alert("Profile updated successfully!");
+              setFormData(prev => ({ ...prev, password: "" }));
+            } catch (err) {
+              console.error(err);
+              alert("Error updating profile: " + err.message);
+            }
+          };
+          
+  return (
+   <div className="dashuser-wrapper">
+               <div className="dashuser-container">
+   
+                   <div className="sidebar">
+                       <div className="account-header">
+                           {/* <h2>{currentUser?.displayName || formData.name}</h2>
+                           <p>{currentUser?.email || formData.email}</p> */}
+                           <div className="line"></div>
+   
+                           <div className="navcontainer">
+                               <div className="nav-items" onClick={() => setActiveSection("ACCOUNT")}>ACCOUNT</div>
+                               <div className="nav-items" onClick={() => setActiveSection("DELIVERIES")}>DELIVERIES</div>
+                               <div className="nav-items" onClick={() => setActiveSection("TEAMS")}>TEAMS</div>
+                               <div className="nav-items" onClick={() => setActiveSection("INVOICES")}>INVOICES</div>
+                               <div className="nav-items" onClick={() => setActiveSection("WALLET")}>WALLET</div>
+   
+                           </div>
+                       </div>
+                   </div>
+   
+                   <div className="content">
+                       {activeSection === "ACCOUNT" && (
+                           <form className="account-form" onSubmit={handleSubmit}>
+                               <label>
+                                   Name:
+                                   <input name="name" value={formData.name} onChange={handleChange} />
+                               </label>
+                               <label>
+                                   Email:
+                                   <input name="email" value={formData.email} onChange={handleChange} />
+                               </label>
+                               <label>
+                                   Phone:
+                                   <input name="phone" value={formData.phone} onChange={handleChange} />
+                               </label>
+                               <label>
+                                   Street:
+                                   <input name="street" value={formData.street} onChange={handleChange} />
+                               </label>
+                               <label>
+                                   City:
+                                   <input name="city" value={formData.city} onChange={handleChange} />
+                               </label>
+                               <label>
+                                   State:
+                                   <input name="state" value={formData.state} onChange={handleChange} />
+                               </label>
+                               <label>
+                                   Zip:
+                                   <input name="zip" value={formData.zip} onChange={handleChange} />
+                               </label>
+                               <label>
+                                   Password:
+                                   <input type="password" name="password" value={formData.password} onChange={handleChange} />
+                               </label>
+                               <div className="button-wrapper">
+                                   <button className="button-30" type="submit">Save Changes</button>
+                               </div>
+                           </form>
+                       )}
+   
+                       {activeSection === "DELIVERIES" && <DeliveriesTabs />}
+                       {activeSection === "TEAMS" && <TEAMS/>}
+                       {activeSection === "INVOICES" && <p>Invoices content goes here.</p>}
+                       {activeSection === "WALLET" && <p>Wallet content goes here.</p>}
+                   </div>
+               </div>
+           </div>
+  );
+};
+
+

@@ -1,11 +1,13 @@
 import React, { useRef, useState } from "react";
 import "./Navbar.css";
 import logo from "../assets/hlogo2.png";
-import { firestore } from "../firebase";
-import { addDoc, collection } from "firebase/firestore";
+import { auth,firestore } from "../firebase";
+import { addDoc,doc,setDoc,getDoc, collection } from "firebase/firestore";
 import { login, signInWithGoogle, logout, signup, sendPasswordResetEmail } from "../auth";
 import { useAuth } from "../contexts/authContext";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import gmailogo from "../assets/gmail.png";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const [isActive, setIsActive] = useState(false);
@@ -27,6 +29,7 @@ const Navbar = () => {
   const stateRef = useRef();
   const zipRef = useRef();
   const passwordRef = useRef();
+  const navigate = useNavigate();
 
   const usersRef = collection(firestore, "users"); // firestore collection
 
@@ -35,7 +38,7 @@ const Navbar = () => {
   // Signup handler
   const handleSignup = async (e) => {
     e.preventDefault();
-
+  
     const data = {
       name: nameRef.current.value.trim(),
       email: emailRef.current.value.trim(),
@@ -46,21 +49,21 @@ const Navbar = () => {
       zip: zipRef.current.value.trim(),
       password: passwordRef.current.value,
     };
-
+  
     const errors = {};
-
+  
     if (!data.name) errors.name = "Full Name is required";
     if (!data.email) errors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(data.email)) errors.email = "Email is invalid";
-
+  
     if (!data.phone) errors.phone = "Phone Number is required";
     else if (!/^\d{10}$/.test(data.phone)) errors.phone = "Phone Number must be 10 digits";
-
+  
     if (!data.street) errors.street = "Street is required";
     if (!data.city) errors.city = "City is required";
     if (!data.state) errors.state = "Province is required";
     if (!data.zip) errors.zip = "Zip Code is required";
-
+  
     if (!data.password) {
       errors.password = "Password is required";
     } else {
@@ -70,15 +73,31 @@ const Navbar = () => {
           "Password must be at least 6 characters, include 1 uppercase, 1 number, and 1 special character";
       }
     }
-
+  
     setSignupErrors(errors);
-
     if (Object.keys(errors).length > 0) return; // stop if there are errors
-
+  
     try {
-      // await signup(data.email, data.password); // optional
-      await addDoc(usersRef, data);
+      // Create user in Firebase Auth
+      const userCredential = await signup(data.email, data.password);
 
+      const role = data.email.endsWith("@brickbasket.ca") ? "delivery_manager" : "regular";
+  
+      // Save Firestore document with UID as ID
+      const userRef = doc(firestore, "users", userCredential.user.uid);
+      await setDoc(userRef, {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        street: data.street,
+        city: data.city,
+        state: data.state,
+        zip: data.zip,
+        role: role
+      });
+
+      await logout();
+  
       alert("Signup successful");
       setOpenSignup(false);
       setOpenLogin(true);
@@ -87,7 +106,7 @@ const Navbar = () => {
       alert("Signup failed: " + err.message);
     }
   };
-
+  
 
 
 
@@ -116,9 +135,31 @@ const Navbar = () => {
     const email = e.target.email.value;
     const password = e.target.password.value;
 
+  
+
+    
     try {
-      await login(email, password);
-      setOpenLogin(false);
+      // Sign in the user
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+  
+      // Fetch the user document from Firestore
+      const userDoc = await getDoc(doc(firestore, "users", uid));
+      if (!userDoc.exists()) {
+        alert("User record not found");
+        return;
+      }
+  
+      const { role } = userDoc.data(); // read the role field
+  
+      // Redirect based on role
+      if (role.trim() === "delivery_manager") { // trim because you had a space in signup
+        navigate("/DashDM");
+      } else {
+        navigate("/Dashuser");
+      }
+  
+      setOpenLogin(false); // close login popup
     } catch (err) {
       console.error(err);
       alert("Login failed: " + err.message);
@@ -128,13 +169,43 @@ const Navbar = () => {
   // Google Sign-In handler
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle();
-      setOpenLogin(false);
+      // Sign in with Google
+      const userCredential = await signInWithGoogle(); // your existing function
+      const user = userCredential.user;
+  
+      // Reference to the user's Firestore document
+      const userRef = doc(firestore, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+  
+      if (!userSnap.exists()) {
+        // Create document with info from Google
+        await setDoc(userRef, {
+          name: user.displayName || "",
+          email: user.email || "",
+          phone: "",    // Google doesn't provide phone by default
+          street: "",
+          city: "",
+          state: "",
+          zip: ""
+        });
+      }
+  
+      // Fetch the newly created or existing document to populate the form
+      const updatedSnap = await getDoc(userRef);
+      if (updatedSnap.exists()) {
+        setFormData({ ...updatedSnap.data(), password: "" });
+      }
+  
+      setCurrentUser(user);      // update currentUser state
+      setActiveSection("ACCOUNT"); // optional: switch to account panel
+      setOpenLogin(false);       // close login popup
     } catch (err) {
       console.error(err);
       alert("Google Sign-In failed: " + err.message);
     }
   };
+  
+
 
   const toggleMenu = () => setIsActive(!isActive);
   const closeLogin = () => setOpenLogin(false);
@@ -155,10 +226,12 @@ const Navbar = () => {
   return (
     <>
       <nav>
+        <a href="/">
         <div className="logo">
           <img src={logo} alt="logo" />
           <h1>Brick Basket</h1>
         </div>
+        </a>
 
         <div className={`off-screen-menu ${isActive ? "active" : ""}`}>
           <ul>

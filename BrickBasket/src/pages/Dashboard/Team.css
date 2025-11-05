@@ -1,0 +1,28 @@
+.role-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.role-row label {
+  width: 150px;
+}
+
+.role-row select {
+  flex: 1;
+  padding: 4px 8px;
+}
+
+.save-button {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.save-button:hover {
+  background-color: #0056b3;
+}

@@ -5,7 +5,7 @@ import { auth, firestore } from "../../firebase";
 import { onAuthStateChanged, updateProfile, updateEmail } from "firebase/auth";
 import { doc, updateDoc, setDoc, getDoc, collection } from "firebase/firestore";
 import { updatePassword} from "firebase/auth";
-
+import DeliveryReport from "./DeliveryReport";
 
 
 export default function DashDM (){
@@ -132,7 +132,7 @@ export default function DashDM (){
                                <div className="nav-items" onClick={() => setActiveSection("DELIVERIES")}>DELIVERIES</div>
                                <div className="nav-items" onClick={() => setActiveSection("TEAMS")}>TEAMS</div>
                                <div className="nav-items" onClick={() => setActiveSection("INVOICES")}>INVOICES</div>
-                               <div className="nav-items" onClick={() => setActiveSection("WALLET")}>WALLET</div>
+                               <div className="nav-items" onClick={() => setActiveSection("REPORT")}>REPORT</div>
    
                            </div>
                        </div>
@@ -182,7 +182,7 @@ export default function DashDM (){
                        {activeSection === "DELIVERIES" && <DeliveriesTabs />}
                        {activeSection === "TEAMS" && <TEAMS/>}
                        {activeSection === "INVOICES" && <p>Invoices content goes here.</p>}
-                       {activeSection === "WALLET" && <p>Wallet content goes here.</p>}
+                       {activeSection === "REPORT" && <DeliveryReport />}
                    </div>
                </div>
            </div>

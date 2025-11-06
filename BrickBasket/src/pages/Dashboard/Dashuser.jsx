@@ -6,6 +6,7 @@ import { doc, updateDoc, setDoc, getDoc, collection } from "firebase/firestore";
 import { updatePassword} from "firebase/auth";
 import PaymentOptions from "./PaymentOptions.jsx";
 import DeliveryMap from "./Deliverymap.jsx";
+import DeliveryHistory from "./DeliveryHistory.jsx";
 
 
 export default function Dashuser() {
@@ -188,7 +189,7 @@ export default function Dashuser() {
                     )}
 
                     {activeSection === "DELIVERIES" && <DeliveryMap />}
-                    {activeSection === "HISTORY" && <p>History content goes here.</p>}
+                    {activeSection === "HISTORY" && <DeliveryHistory />}
                     {activeSection === "INVOICES" && <p>Invoices content goes here.</p>}
                     {activeSection === "WALLET" && <PaymentOptions />}
                 </div>

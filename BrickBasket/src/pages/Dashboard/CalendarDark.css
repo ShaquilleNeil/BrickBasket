@@ -1,0 +1,84 @@
+/* CalendarDark.css */
+
+/* Container */
+.react-calendar {
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 10px;
+  color: white;
+  width: 100%;
+  max-width: 100%;
+  font-family: inherit;
+  padding: 10px;
+}
+
+/* Month navigation */
+.react-calendar__navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.react-calendar__navigation button {
+  color: white;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.react-calendar__navigation button:hover {
+  color: #00bfa6;
+}
+
+/* Weekday labels */
+.react-calendar__month-view__weekdays {
+  color: #ccc;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+/* Days */
+.react-calendar__tile {
+  background: transparent;
+  color: #fff;
+  border-radius: 6px;
+  padding: 8px 0;
+  transition: background 0.2s;
+}
+
+.react-calendar__tile:enabled:hover {
+  background: #333;
+}
+
+.react-calendar__tile--now {
+  background: rgba(0, 191, 166, 0.2);
+  color: #00bfa6;
+  border: 1px solid #00bfa6;
+}
+
+.react-calendar__tile--active {
+  background: #00bfa6 !important;
+  color: black !important;
+}
+
+/* Month view grid lines */
+.react-calendar__month-view__days__day {
+  border: 1px dotted #ffffff;
+}
+
+/* Highlight days with deliveries */
+.react-calendar__tile span {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #81c784;
+}
+
+/* Hide the white focus outline */
+.react-calendar__tile:focus {
+  outline: 1px solid #00bfa6;
+  box-shadow: 0 0 0 1px #00bfa6;
+}

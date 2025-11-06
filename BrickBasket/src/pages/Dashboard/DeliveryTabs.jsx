@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { firestore } from "../../firebase";
+import "./CalendarDark.css";
 import {
   collection,
   onSnapshot,
@@ -9,7 +10,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
+
 
 const DeliveriesTabs = () => {
   const [activeTab, setActiveTab] = useState("pending");
@@ -341,6 +342,9 @@ const DeliveriesTabs = () => {
                   <p>Client: {d.clientName}</p>
                   <p>Team: {d.teamName}</p>
                   <p>Status: {d.status}</p>
+                  <p>Driver: {d.driverName}</p>
+                  <p>Items : {d.items.map((item) => item.name).join(", ")}</p>
+                  <p>Store: {d.items.map((item) => item.store).join(", ")}</p>
                 </div>
               ))
             )}

@@ -259,189 +259,128 @@ export default function DeliveryMapPanel() {
 
       
      {/* COLLAPSIBLE SECTIONS */}
+{/* COLLAPSIBLE SECTIONS */}
 <div style={{ marginTop: "20px" }}>
-  {/* PENDING SECTION */}
-  <div style={{ marginBottom: "10px" }}>
-    <h3
-      onClick={() => toggleSection("pending")}
-      style={{
-        color: "white",
-        cursor: "pointer",
-        backgroundColor: "#333",
-        padding: "8px 10px",
-        borderRadius: "6px",
-      }}
-    >
-      {openSections.pending ? "▼ " : "▶ "} Pending Deliveries
-    </h3>
-    {openSections.pending &&
-      deliveries
-        .filter((d) => d.status === "Pending")
-        .map((delivery) => (
-          <div
-            key={delivery.id}
-            style={{
-              backgroundColor: "#2c2c2c",
-              color: "white",
-              padding: "10px",
-              borderRadius: "6px",
-              marginBottom: "10px",
-              cursor: "pointer",
-            }}
-            onClick={() => setSelectedDelivery(delivery)}
-          >
-            <h4>{delivery.name}</h4>
-            {delivery.items.map((item, idx) => (
+
+  {/* Helper function for rendering cards */}
+  {["pending", "inprogress", "completed"].map((sectionKey) => {
+    const sectionName =
+      sectionKey === "pending"
+        ? "Pending Deliveries"
+        : sectionKey === "inprogress"
+        ? "In Progress Deliveries"
+        : "Completed Deliveries";
+
+    const sectionStatus =
+      sectionKey === "pending"
+        ? "Pending"
+        : sectionKey === "inprogress"
+        ? "In Progress"
+        : "Completed";
+
+    const buttonColor =
+      sectionKey === "pending"
+        ? "#ffc107"
+        : sectionKey === "inprogress"
+        ? "#17a2b8"
+        : "#6c757d";
+
+    return (
+      <div style={{ marginBottom: "10px" }} key={sectionKey}>
+        <h3
+          onClick={() => toggleSection(sectionKey)}
+          style={{
+            color: "white",
+            cursor: "pointer",
+            backgroundColor: "#333",
+            padding: "8px 10px",
+            borderRadius: "6px",
+          }}
+        >
+          {openSections[sectionKey] ? "▼ " : "▶ "} {sectionName}
+        </h3>
+
+        {openSections[sectionKey] &&
+          deliveries
+            .filter((d) => d.status === sectionStatus)
+            .map((delivery) => (
               <div
-                key={idx}
+                key={delivery.id}
                 style={{
-                  marginBottom: "5px",
-                  paddingLeft: "10px",
-                  borderLeft: "2px solid #555",
+                  backgroundColor: "#2c2c2c",
+                  color: "white",
+                  padding: "10px",
+                  borderRadius: "6px",
+                  marginBottom: "10px",
+                  cursor: "pointer",
                 }}
+                onClick={() => setSelectedDelivery(delivery)}
               >
-                <p>Item: {item.name}</p>
-                <p>Store: {item.store}</p>
+                <h4>{delivery.name}</h4>
+                <p>Client: {delivery.clientName}</p>
+                <p>Driver: {delivery.driverName}</p>
+                <p>Team: {delivery.teamName}</p>
+                <p>Status: {delivery.status}</p>
+
+                {delivery.items?.length > 0 && (
+                  <div style={{ marginTop: "8px" }}>
+                    <strong>Items:</strong>
+                    {delivery.items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          marginBottom: "5px",
+                          paddingLeft: "10px",
+                          borderLeft: "2px solid #555",
+                        }}
+                      >
+                        <p>Item: {item.name}</p>
+                        <p>Store: {item.store}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {delivery.deliveryDate && (
+                  <p>
+                    Date:{" "}
+                    {new Date(delivery.deliveryDate).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}
+                  </p>
+                )}
+
+                <button
+                  style={{
+                    backgroundColor: buttonColor,
+                    color: "white",
+                    padding: "6px 10px",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    marginTop: "5px",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEditModal(delivery);
+                  }}
+                >
+                  Edit
+                </button>
               </div>
             ))}
-            <p>Status: {delivery.status}</p>
-            {delivery.deliveryDate && (
-              <p>
-                Date:{" "}
-                {new Date(delivery.deliveryDate).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            )}
-            <button
-              style={{
-                backgroundColor: "#ffc107",
-                color: "black",
-                padding: "6px 10px",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                marginTop: "5px",
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                openEditModal(delivery);
-              }}
-            >
-              Edit
-            </button>
-          </div>
-        ))}
-  </div>
-
-  {/* IN PROGRESS SECTION */}
-  <div style={{ marginBottom: "10px" }}>
-    <h3
-      onClick={() => toggleSection("inprogress")}
-      style={{
-        color: "white",
-        cursor: "pointer",
-        backgroundColor: "#333",
-        padding: "8px 10px",
-        borderRadius: "6px",
-      }}
-    >
-      {openSections.inprogress ? "▼ " : "▶ "} In Progress Deliveries
-    </h3>
-    {openSections.inprogress &&
-      deliveries
-        .filter((d) => d.status === "In Progress")
-        .map((delivery) => (
-          <div
-            key={delivery.id}
-            style={{
-              backgroundColor: "#2c2c2c",
-              color: "white",
-              padding: "10px",
-              borderRadius: "6px",
-              marginBottom: "10px",
-              cursor: "pointer",
-            }}
-            onClick={() => setSelectedDelivery(delivery)}
-          >
-            <h4>{delivery.name}</h4>
-            <p>Driver: {delivery.driverName}</p>
-            <p>Status: {delivery.status}</p>
-            {delivery.deliveryDate && (
-              <p>
-                Date:{" "}
-                {new Date(delivery.deliveryDate).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            )}
-          <button
-            style={{
-              backgroundColor: "#17a2b8",
-              color: "white",
-              padding: "6px 10px",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              marginTop: "5px",
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              openEditModal(delivery);
-            }}
-          >
-            Edit
-          </button>
-          </div>
-          
-        ))}
-  </div>
-
-  {/* COMPLETED SECTION */}
-  <div style={{ marginBottom: "10px" }}>
-    <h3
-      onClick={() => toggleSection("completed")}
-      style={{
-        color: "white",
-        cursor: "pointer",
-        backgroundColor: "#333",
-        padding: "8px 10px",
-        borderRadius: "6px",
-      }}
-    >
-      {openSections.completed ? "▼ " : "▶ "} Completed Deliveries
-    </h3>
-    {openSections.completed &&
-      deliveries
-        .filter((d) => d.status === "Completed")
-        .map((delivery) => (
-          <div
-            key={delivery.id}
-            style={{
-              backgroundColor: "#2c2c2c",
-              color: "white",
-              padding: "10px",
-              borderRadius: "6px",
-              marginBottom: "10px",
-              cursor: "pointer",
-            }}
-            onClick={() => setSelectedDelivery(delivery)}
-          >
-            <h4>{delivery.name}</h4>
-            <p>Driver: {delivery.driverName}</p>
-            <p>Status: {delivery.status}</p>
-          </div>
-        ))}
-  </div>
+      </div>
+    );
+  })}
 </div>
+
         </div>
 
       {/* RIGHT PANEL (MAP) */}

@@ -6,6 +6,7 @@ import { onAuthStateChanged, updateProfile, updateEmail } from "firebase/auth";
 import { doc, updateDoc, setDoc, getDoc, collection } from "firebase/firestore";
 import { updatePassword} from "firebase/auth";
 import DeliveryReport from "./DeliveryReport";
+import ManagerInvoices from "./ManagerInvoices";
 
 
 export default function DashDM (){
@@ -181,7 +182,7 @@ export default function DashDM (){
    
                        {activeSection === "DELIVERIES" && <DeliveriesTabs />}
                        {activeSection === "TEAMS" && <TEAMS/>}
-                       {activeSection === "INVOICES" && <p>Invoices content goes here.</p>}
+                       {activeSection === "INVOICES" && <ManagerInvoices />}
                        {activeSection === "REPORT" && <DeliveryReport />}
                    </div>
                </div>

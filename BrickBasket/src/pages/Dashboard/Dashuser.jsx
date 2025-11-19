@@ -7,6 +7,12 @@ import { updatePassword} from "firebase/auth";
 import PaymentOptions from "./PaymentOptions.jsx";
 import DeliveryMap from "./Deliverymap.jsx";
 import DeliveryHistory from "./DeliveryHistory.jsx";
+import { onMessage } from "firebase/messaging";
+import { messaging } from "../../firebase";   // or wherever you export messaging
+import Invoices from "./Invoices.jsx";
+
+
+
 
 
 export default function Dashuser() {
@@ -66,10 +72,19 @@ export default function Dashuser() {
         return () => unsubscribe();
     }, []);
 
+    useEffect(() => {
+        const unsubscribe = onMessage(messaging, (payload) => {
+          alert(`Delivery Update: ${payload.notification.body}`);
+        });
+      
+        return unsubscribe;
+      }, []);
+      
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -190,7 +205,7 @@ export default function Dashuser() {
 
                     {activeSection === "DELIVERIES" && <DeliveryMap />}
                     {activeSection === "HISTORY" && <DeliveryHistory />}
-                    {activeSection === "INVOICES" && <p>Invoices content goes here.</p>}
+                    {activeSection === "INVOICES" && <Invoices />}
                     {activeSection === "WALLET" && <PaymentOptions />}
                 </div>
             </div>

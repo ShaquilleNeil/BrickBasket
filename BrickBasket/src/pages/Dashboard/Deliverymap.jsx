@@ -33,6 +33,20 @@ export default function DeliveryMapPanel() {
   const closeDelivery = () => setOpenDelivery(false);
   const [items, setItems] = useState([{ name: "", store: "" }]);
   const [newDeliveryDate, setNewDeliveryDate] = useState(new Date());
+  const [mapRef, setMapRef] = useState(null);
+
+  const fetchUserName = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return "Unknown";
+  
+    const userRef = doc(firestore, "users", currentUser.uid);
+    const userSnap = await getDoc(userRef);
+  
+    if (!userSnap.exists()) return "Unknown";
+  
+    return userSnap.data().name || "Unknown";
+  };
+  
 
   const [openSections, setOpenSections] = useState({
     pending: true,
@@ -47,31 +61,74 @@ export default function DeliveryMapPanel() {
     }));
   };
   
+  const cancelDelivery = async (deliveryId) => {
+    try {
+      const ref = doc(firestore, "deliveries", deliveryId);
+  
+      // Fetch latest data
+      const snapshot = await getDoc(ref);
+      if (!snapshot.exists()) return;
+  
+      const data = snapshot.data();
+  
+      // Allowed statuses
+      const canCancel = ["Pending", "In Progress"];
+      if (!canCancel.includes(data.status)) {
+        alert("This delivery can no longer be canceled.");
+        return;
+      }
+  
+      await updateDoc(ref, {
+        status: "Canceled",
+        canceledAt: new Date(),
+      });
+  
+      alert("Delivery successfully canceled.");
+    } catch (err) {
+      console.error("Error canceling delivery:", err);
+      alert("Failed to cancel delivery.");
+    }
+  };
+  
   
 
   const auth = getAuth();
   const user = auth.currentUser;
 
-  const fetchUserName = async () => {
+  const fetchUserProfile = async () => {
     const currentUser = auth.currentUser;
-    if (!currentUser) return "Unknown";
-
+    if (!currentUser) return null;
+  
     const userDocRef = doc(firestore, "users", currentUser.uid);
-    const userDocSnap = await getDoc(userDocRef);
-
-    if (userDocSnap.exists()) {
-      const data = userDocSnap.data();
-      return data.name || "Unknown";
-    } else {
-      return "Unknown";
-    }
+    const userSnap = await getDoc(userDocRef);
+  
+    if (!userSnap.exists()) return null;
+  
+    return {
+      name: userSnap.data().name || "Unknown",
+      address: userSnap.data().address || "",      // 👈 stored during sign-up
+    };
   };
+  
 
   const stores = [
-    "Home Depot Laval",
-    "Home Depot St Antoine",
-    "Reno Depot St Jacques",
+    {
+      name: "Home Depot Laval",
+      lat: 45.5698,
+      lng: -73.7502,
+    },
+    {
+      name: "Home Depot St Antoine",
+      lat: 45.4883,
+      lng: -73.5836,
+    },
+    {
+      name: "Reno Depot St Jacques",
+      lat: 45.4764,
+      lng: -73.6308,
+    },
   ];
+  
 
   // ✅ Fetch deliveries in real-time
   useEffect(() => {
@@ -136,39 +193,89 @@ export default function DeliveryMapPanel() {
     setItems(updatedItems);
   };
 
+
+  async function geocodeAddress(address) {
+    const apiKey = "AIzaSyDFLzi0umB2Ma_D1hYkAS9jgvvjBHDELPI";
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+  
+    const response = await fetch(url);
+    const data = await response.json();
+  
+    if (data.status !== "OK") return null;
+  
+    return data.results[0].geometry.location; // { lat, lng }
+  }
+  
+  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     try {
       const clientName = await fetchUserName();
-
+  
+      // 🔥 Fetch user profile for address
+      const userRef = doc(firestore, "users", auth.currentUser.uid);
+      const userSnap = await getDoc(userRef);
+  
+      if (!userSnap.exists()) {
+        alert("Error loading your profile.");
+        return;
+      }
+  
+      const userData = userSnap.data();
+  
+      // 🔥 Ensure they have address fields
+      if (!userData.street || !userData.city || !userData.state || !userData.zip) {
+        alert("No delivery address on file. Please update your profile.");
+        return;
+      }
+  
+      // 🔥 Full formatted address
+      const fullAddress = `${userData.street}, ${userData.city}, ${userData.state}, ${userData.zip}`;
+  
+      // 🔥 Get Lat/Lng via Google Maps API
+      const geo = await geocodeAddress(fullAddress);
+  
+      if (!geo) {
+        alert("Could not verify your delivery address location.");
+        return;
+      }
+  
+      // 🔥 Build new delivery object with REAL location
       const newDelivery = {
         name: `Request #${Date.now()}`,
-        clientName: clientName,
+        clientName,
         items: [...items],
         status: "Pending",
         teamId: "",
         teamName: "Unassigned",
         driverName: "Unassigned",
+  
+        // ⭐ REAL coordinates from geocoding API
         location: {
-          latitude: 45.5017,
-          longitude: -73.5673,
+          latitude: geo.lat,
+          longitude: geo.lng,
         },
+  
         deliveryDate: newDeliveryDate,
         createdAt: new Date(),
-        userId: auth.currentUser?.uid || null
-
+        userId: auth.currentUser?.uid || null,
       };
-
+  
       await addDoc(collection(firestore, "deliveries"), newDelivery);
-
+  
       setItems([{ name: "", store: "" }]);
       closeDelivery();
+  
       console.log("Delivery request submitted successfully!");
     } catch (error) {
       console.error("Error adding delivery: ", error);
+      alert("There was an error submitting your delivery request.");
     }
   };
+  
+  
 
   const origin = { lat: 45.5017, lng: -73.5673 };
 
@@ -336,6 +443,8 @@ export default function DeliveryMapPanel() {
                       >
                         <p>Item: {item.name}</p>
                         <p>Store: {item.store}</p>
+
+                        
                       </div>
                     ))}
                   </div>
@@ -374,6 +483,27 @@ export default function DeliveryMapPanel() {
                 >
                   Edit
                 </button>
+                {["Pending", "In Progress"].includes(delivery.status) && (
+  <button
+    style={{
+      backgroundColor: "#dc3545",
+      color: "white",
+      padding: "6px 10px",
+      border: "none",
+      borderRadius: "6px",
+      cursor: "pointer",
+      marginTop: "5px",
+      marginLeft: "10px",
+    }}
+    onClick={(e) => {
+      e.stopPropagation();
+      cancelDelivery(delivery.id);
+    }}
+  >
+    Cancel
+  </button>
+)}
+
               </div>
             ))}
       </div>
@@ -384,46 +514,54 @@ export default function DeliveryMapPanel() {
         </div>
 
       {/* RIGHT PANEL (MAP) */}
-      <LoadScript googleMapsApiKey="AIzaSyA3XlNOQoweAUjubkWnn8YFiyAv0fh_ymA">
-        <GoogleMap
-          mapContainerStyle={mapStyle}
-          center={
-            selectedDelivery
-              ? { lat: selectedDelivery.lat, lng: selectedDelivery.lng }
-              : origin
+      <LoadScript googleMapsApiKey="AIzaSyDFLzi0umB2Ma_D1hYkAS9jgvvjBHDELPI">
+  <GoogleMap
+    mapContainerStyle={mapStyle}
+    onLoad={(map) => setMapRef(map)}
+    center={origin}   // ← fixed, no more dynamic center!
+    zoom={12}
+  >
+    <Marker position={origin} label="Warehouse" />
+
+    {deliveries.map((d) => (
+      <Marker
+        key={d.id}
+        position={{ lat: d.lat, lng: d.lng }}
+        label={d.name}
+        onClick={() => {
+          setSelectedDelivery(d);
+          if (mapRef) {
+            mapRef.panTo({ lat: d.lat, lng: d.lng });
+            mapRef.setZoom(13);
           }
-          zoom={12}
-        >
-          <Marker position={origin} label="Warehouse" />
+        }}
+      />
+    ))}
 
-          {deliveries.map((d) => (
-            <Marker
-              key={d.id}
-              position={{ lat: d.lat, lng: d.lng }}
-              label={d.name}
-            />
-          ))}
+    {selectedDelivery && (
+      <DirectionsService
+        key={selectedDelivery.id}
+        options={{
+          origin,
+          destination: {
+            lat: selectedDelivery.lat,
+            lng: selectedDelivery.lng,
+          },
+          travelMode: "DRIVING",
+        }}
+        callback={handleDirectionsCallback(selectedDelivery.id)}
+      />
+    )}
 
-          {selectedDelivery && (
-            <DirectionsService
-              key={selectedDelivery.id}
-              options={{
-                origin,
-                destination: {
-                  lat: selectedDelivery.lat,
-                  lng: selectedDelivery.lng,
-                },
-                travelMode: "DRIVING",
-              }}
-              callback={handleDirectionsCallback(selectedDelivery.id)}
-            />
-          )}
-
-          {selectedDelivery && directionsMap[selectedDelivery.id] && (
-            <DirectionsRenderer directions={directionsMap[selectedDelivery.id]} />
-          )}
-        </GoogleMap>
-      </LoadScript>
+    {selectedDelivery && directionsMap[selectedDelivery.id] && (
+      <DirectionsRenderer
+      directions={directionsMap[selectedDelivery.id]}
+      options={{ preserveViewport: true }}   // <- KEY FIX
+    />
+    
+    )}
+  </GoogleMap>
+</LoadScript>
 
       {/* CREATE DELIVERY MODAL (unchanged) */}
       {openDelivery && (
@@ -482,27 +620,22 @@ export default function DeliveryMapPanel() {
                   required
                 />
 
-                <select
-                  value={item.store}
-                  onChange={(e) =>
-                    handleItemChange(index, "store", e.target.value)
-                  }
-                  style={{
-                    padding: "8px",
-                    borderRadius: "6px",
-                    border: "1px solid #555",
-                    backgroundColor: "#2c2c2c",
-                    color: "white",
-                  }}
-                  required
-                >
-                  <option value="">Select Store</option>
-                  {stores.map((store, i) => (
-                    <option key={i} value={store}>
-                      {store}
-                    </option>
-                  ))}
-                </select>
+<select
+value={item.store}
+onChange={(e) =>
+  handleItemChange(index, "store", e.target.value)
+}
+>
+<option value="">Select Store</option>
+{stores.map((store, i) => (
+  <option key={i} value={store.name}>
+    {store.name}
+  </option>
+))}
+</select>
+
+
+
               </div>
             ))}
 
